@@ -1,0 +1,128 @@
+package com.project;
+
+import javafx.fxml.FXML;
+import javafx.scene.control.Button;
+import javafx.scene.control.TextField;
+import javafx.event.ActionEvent;
+
+public class Controller {
+
+    @FXML
+    private Button btn1;
+    
+    @FXML
+    private Button btn2;
+    
+    @FXML
+    private Button btn3;
+
+    @FXML
+    private Button btn4;
+
+    @FXML
+    private Button btn5;
+
+    @FXML
+    private Button btn6;
+
+    @FXML
+    private Button btn7;
+
+    @FXML
+    private Button btn8;
+
+    @FXML
+    private Button btn9;
+
+    @FXML
+    private Button btn0;
+
+    @FXML
+    private Button btnplus;
+
+    @FXML
+    private Button btnminus;
+
+    @FXML
+    private Button btnmult;
+
+    @FXML
+    private Button btndiv;
+
+    @FXML
+    private Button btneq;
+
+    @FXML
+    private TextField resultbox;
+
+    private double result = 0;
+    private boolean startOperation = true;
+
+    // Quan cliques un número: 
+    // Si es el principi d'una operació, neteja la caixa de text i posa el número
+    // Si no, afegeix el número a la caixa de text
+    @FXML
+    private void pressnum(ActionEvent event) {
+        if (startOperation) {
+            resultbox.clear();
+            startOperation = false;
+        }
+        Button pressedButton = (Button) event.getSource();
+        String buttonText = pressedButton.getText();
+        resultbox.appendText(buttonText);
+    }
+
+    // Quan cliques un operador:
+    // Si es el principi d'una operació, mostra un error
+    // Si no, afegeix l'operador a la caixa de text amb espais davant i darrere
+    @FXML
+    private void pressother(ActionEvent event) {
+        if (startOperation) {
+            resultbox.setText("Error: Write number");
+            return;
+        }
+        Button pressedButton = (Button) event.getSource();
+        String buttonText = pressedButton.getText();
+        resultbox.appendText(" " + buttonText + " ");
+    }
+
+    // Quan cliques el botó d'igual:
+    // Si la caixa de text conté 2 números i 1 operador al mig, realitza l'operació i mostra el resultat
+    // Si no, mostra un missatge d'error
+    // Si per exemple escrius 3 + - = , donarà error perquè tots els operadors van envoltats d'espais i al fer l'split quedaria [3, +, , -] i genera error perquè la longitud és 4
+    // Al final, marca que s'ha acabat l'operació i que el següent número començarà una nova operació
+    @FXML
+    private void presseq(ActionEvent event) {
+        String expression = resultbox.getText();
+        String[] tokens = expression.split(" ");
+        if (tokens.length == 3) {
+            
+            double num1 = Double.parseDouble(tokens[0]);
+            String operator = tokens[1];
+            double num2 = Double.parseDouble(tokens[2]);
+            switch (operator) {
+                case "+":
+                    result = num1 + num2;
+                    break;
+                case "-":
+                    result = num1 - num2;
+                    break;
+                case "*":
+                    result = num1 * num2;
+                    break;
+                case "/":
+                    if (num2 != 0) {
+                        result = num1 / num2;
+                    } else {
+                        resultbox.setText("Error: Div by 0");
+                        return;
+                    }
+                    break;
+            }
+            resultbox.setText(String.valueOf(result));
+        } else {
+            resultbox.setText("Error: It is not 2 numbers and 1 operator in between");
+        }
+        startOperation = true;
+    }
+}
