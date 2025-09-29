@@ -53,6 +53,9 @@ public class Controller {
     private Button btneq;
 
     @FXML
+    private Button btnclear;
+
+    @FXML
     private TextField resultbox;
 
     private double result = 0;
@@ -63,10 +66,6 @@ public class Controller {
     // Si no, afegeix el número a la caixa de text
     @FXML
     private void pressnum(ActionEvent event) {
-        if (startOperation) {
-            resultbox.clear();
-            startOperation = false;
-        }
         Button pressedButton = (Button) event.getSource();
         String buttonText = pressedButton.getText();
         resultbox.appendText(buttonText);
@@ -77,13 +76,15 @@ public class Controller {
     // Si no, afegeix l'operador a la caixa de text amb espais davant i darrere
     @FXML
     private void pressother(ActionEvent event) {
-        if (startOperation) {
-            resultbox.setText("Error: Write number");
-            return;
-        }
         Button pressedButton = (Button) event.getSource();
         String buttonText = pressedButton.getText();
         resultbox.appendText(" " + buttonText + " ");
+    }
+
+    @FXML
+    private void pressclear(ActionEvent event) {
+        resultbox.clear();
+        result = 0;
     }
 
     // Quan cliques el botó d'igual:
@@ -93,36 +94,43 @@ public class Controller {
     // Al final, marca que s'ha acabat l'operació i que el següent número començarà una nova operació
     @FXML
     private void presseq(ActionEvent event) {
-        String expression = resultbox.getText();
-        String[] tokens = expression.split(" ");
-        if (tokens.length == 3) {
-            
-            double num1 = Double.parseDouble(tokens[0]);
-            String operator = tokens[1];
-            double num2 = Double.parseDouble(tokens[2]);
+    String expression = resultbox.getText();
+    String[] tokens = expression.split(" ");
+    if (tokens.length < 3 || tokens.length % 2 == 0) {
+        resultbox.setText("Error: Invalid expression");
+        return;
+    }
+    try {
+        double result = Double.parseDouble(tokens[0]);
+        for (int i = 1; i < tokens.length; i += 2) {
+            String operator = tokens[i];
+            double num = Double.parseDouble(tokens[i + 1]);
             switch (operator) {
                 case "+":
-                    result = num1 + num2;
+                    result += num;
                     break;
                 case "-":
-                    result = num1 - num2;
+                    result -= num;
                     break;
                 case "*":
-                    result = num1 * num2;
+                    result *= num;
                     break;
                 case "/":
-                    if (num2 != 0) {
-                        result = num1 / num2;
+                    if (num != 0) {
+                        result /= num;
                     } else {
                         resultbox.setText("Error: Div by 0");
                         return;
                     }
                     break;
+                default:
+                    resultbox.setText("Error: Unknown operator");
+                    return;
             }
-            resultbox.setText(String.valueOf(result));
-        } else {
-            resultbox.setText("Error: It is not 2 numbers and 1 operator in between");
         }
-        startOperation = true;
+        resultbox.setText(String.valueOf(result));
+    } catch (Exception e) {
+        resultbox.setText("Error: Invalid input");
     }
+}
 }

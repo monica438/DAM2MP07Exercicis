@@ -47,26 +47,27 @@
          <font>
             <Font size="25.0" />
          </font></Button>
-      <Button fx:id="btnplus" layoutX="368.0" layoutY="87.0" mnemonicParsing="false" onAction="#pressother" prefHeight="86.0" prefWidth="98.0" text="+">
+      <Button fx:id="btnplus" layoutX="368.0" layoutY="44.0" mnemonicParsing="false" onAction="#pressother" prefHeight="86.0" prefWidth="98.0" text="+">
          <font>
             <Font size="35.0" />
          </font></Button>
-      <Button fx:id="btnminus" layoutX="473.0" layoutY="87.0" mnemonicParsing="false" onAction="#pressother" prefHeight="86.0" prefWidth="98.0" text="-">
+      <Button fx:id="btnminus" layoutX="473.0" layoutY="44.0" mnemonicParsing="false" onAction="#pressother" prefHeight="86.0" prefWidth="98.0" text="-">
          <font>
             <Font size="35.0" />
          </font></Button>
-      <Button fx:id="btnmult" layoutX="368.0" layoutY="193.0" mnemonicParsing="false" onAction="#pressother" prefHeight="86.0" prefWidth="98.0" text="*">
+      <Button fx:id="btnmult" layoutX="368.0" layoutY="142.0" mnemonicParsing="false" onAction="#pressother" prefHeight="86.0" prefWidth="98.0" text="*">
          <font>
             <Font size="35.0" />
          </font></Button>
-      <Button fx:id="btndiv" layoutX="473.0" layoutY="193.0" mnemonicParsing="false" onAction="#pressother" prefHeight="86.0" prefWidth="98.0" text="/">
+      <Button fx:id="btndiv" layoutX="473.0" layoutY="142.0" mnemonicParsing="false" onAction="#pressother" prefHeight="86.0" prefWidth="98.0" text="/">
          <font>
             <Font size="35.0" />
          </font></Button>
-      <Button fx:id="btneq" layoutX="372.0" layoutY="301.0" mnemonicParsing="false" onAction="#presseq" prefHeight="86.0" prefWidth="203.0" text="=">
+      <Button fx:id="btneq" layoutX="372.0" layoutY="236.0" mnemonicParsing="false" onAction="#presseq" prefHeight="86.0" prefWidth="203.0" text="=">
          <font>
             <Font size="50.0" />
          </font></Button>
       <TextField fx:id="resultbox" layoutX="45.0" layoutY="52.0" prefHeight="86.0" prefWidth="294.0" />
+      <Button fx:id="btnclear" layoutX="441.0" layoutY="359.0" mnemonicParsing="false" onAction="#pressclear" prefHeight="46.0" prefWidth="65.0" text="C" />
    </children>
 </AnchorPane>
