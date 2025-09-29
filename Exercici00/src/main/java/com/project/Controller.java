@@ -59,7 +59,6 @@ public class Controller {
     private TextField resultbox;
 
     private double result = 0;
-    private boolean startOperation = true;
 
     // Quan cliques un número: 
     // Si es el principi d'una operació, neteja la caixa de text i posa el número
