@@ -3,8 +3,6 @@ package com.project;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.control.ScrollPane;
@@ -12,7 +10,6 @@ import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.VBox;
-import javafx.scene.text.Text;
 import javafx.event.ActionEvent;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
@@ -23,19 +20,14 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpRequest.BodyPublishers;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.InputStream;
 import java.io.File;
 import java.util.Base64;
 import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.json.JSONArray;
@@ -57,8 +49,6 @@ public class Controller implements Initializable {
     private CompletableFuture<HttpResponse<String>> completeRequest;
     private final AtomicBoolean isCancelled = new AtomicBoolean(false);
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
-    private Future<?> streamReadingTask;
-    private volatile boolean isFirstChunk = false;
 
     private Image imgPerezoso;
     private Image imgClip;
@@ -261,14 +251,6 @@ public class Controller implements Initializable {
 
         boolean isImageRequest = (imageBase64 != null);
 
-        System.out.println("=== DEPURACIÓN ===");
-        System.out.println("modelo elegido: " + model);
-        System.out.println("isImageRequest? " + isImageRequest);
-        if (isImageRequest) {
-            System.out.println("longitud base64: " + imageBase64.length());
-        }
-
-
 
         JSONObject body = new JSONObject()
             .put("model", model)
@@ -280,8 +262,6 @@ public class Controller implements Initializable {
             body.put("images", new JSONArray().put(imageBase64));
         }
 
-
-        System.out.println("Request JSON: " + body.toString());
 
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create("http://localhost:11434/api/generate"))
