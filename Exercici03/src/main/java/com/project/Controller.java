@@ -7,6 +7,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.application.Platform;
 import javafx.scene.Node;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -43,17 +44,18 @@ import org.json.JSONObject;
 public class Controller implements Initializable {
 
     private static final String TEXT_MODEL = "gemma3:1b";
+    private static final String IMAGE_TEXT_MODEL = "llava-phi3";
 
     @FXML private VBox history;
     @FXML private TextField message;
     @FXML private ImageView addIcon;
     @FXML private ImageView sendStopIcon;
+    @FXML private ScrollPane scrollPane;
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
-    private CompletableFuture<HttpResponse<InputStream>> streamRequest;
+    private CompletableFuture<HttpResponse<java.util.stream.Stream<String>>> streamRequest;
     private CompletableFuture<HttpResponse<String>> completeRequest;
     private final AtomicBoolean isCancelled = new AtomicBoolean(false);
-    private InputStream currentInputStream;
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private Future<?> streamReadingTask;
     private volatile boolean isFirstChunk = false;
@@ -81,6 +83,14 @@ public class Controller implements Initializable {
         loadImages();
         setupUI();
         setState(State.IDLE);
+
+        history.heightProperty().addListener((obs, oldVal, newVal) -> {
+            // Solo hacer scroll si el contenido excede el viewport
+            if (history.getHeight() > scrollPane.getViewportBounds().getHeight()) {
+                scrollPane.setVvalue(1.0);
+            }
+        });
+
     }
 
     private void loadImages() {
@@ -136,10 +146,11 @@ public class Controller implements Initializable {
         if ((currentState == State.WRITING) || attachedImageBase64 != null) {
             String userText = message.getText().trim();
             if (!userText.isEmpty() || attachedImageBase64 != null) {
-                addUserMessage(userText.isEmpty() ? "[Imatge adjuntada]" : userText);
+                String finalMessage = userText.isEmpty() ? "Describe this image" : userText;
+                addUserMessage(finalMessage);
                 message.clear();
                 setState(State.WAITING_RESPONSE);
-                sendRequest(userText);
+                sendRequest(finalMessage);
             }
         } else if (currentState == State.WAITING_RESPONSE) {
             cancelCurrentRequest();
@@ -160,7 +171,6 @@ public class Controller implements Initializable {
             try {
                 byte[] fileContent = Files.readAllBytes(selectedFile.toPath());
                 attachedImageBase64 = Base64.getEncoder().encodeToString(fileContent);
-                addUserMessage("[Imatge adjuntada: " + selectedFile.getName() + "]");
                 setState(State.WRITING);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -168,6 +178,7 @@ public class Controller implements Initializable {
             }
         }
     }
+
 
     private void addMessageToHistory(String title, String messageText, Image logo) {
         try {
@@ -182,7 +193,9 @@ public class Controller implements Initializable {
             chatItemController.bindWrappingWidth(history.getWidth() - 100);
             chatItemNode.setUserData(chatItemController);
 
-            Platform.runLater(() -> history.getChildren().add(chatItemNode));
+            Platform.runLater(() -> {
+                history.getChildren().add(chatItemNode);
+            });
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -208,7 +221,9 @@ public class Controller implements Initializable {
 
             lastBotMessageController = chatItemController;
 
-            Platform.runLater(() -> history.getChildren().add(chatItemNode));
+            Platform.runLater(() -> {
+                history.getChildren().add(chatItemNode);
+            });
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -224,7 +239,10 @@ public class Controller implements Initializable {
         isCancelled.set(false);
         lastBotMessageController = null;
 
-        ensureModelLoaded(TEXT_MODEL).whenComplete((v, err) -> {
+        // Elegir el modelo adecuado según si hay imagen o no
+        String model = (attachedImageBase64 != null) ? IMAGE_TEXT_MODEL : TEXT_MODEL;
+
+        ensureModelLoaded(model).whenComplete((v, err) -> {
             if (err != null) {
                 Platform.runLater(() -> {
                     addBotMessage("Error carregant el model.");
@@ -232,7 +250,7 @@ public class Controller implements Initializable {
                 });
                 return;
             }
-            executeImageTextRequest(TEXT_MODEL, prompt, attachedImageBase64);
+            executeImageTextRequest(model, prompt, attachedImageBase64);
         });
     }
 
@@ -241,17 +259,29 @@ public class Controller implements Initializable {
             prompt = "Describe esta imagen";
         }
 
+        boolean isImageRequest = (imageBase64 != null);
+
+        System.out.println("=== DEPURACIÓN ===");
+        System.out.println("modelo elegido: " + model);
+        System.out.println("isImageRequest? " + isImageRequest);
+        if (isImageRequest) {
+            System.out.println("longitud base64: " + imageBase64.length());
+        }
+
+
+
         JSONObject body = new JSONObject()
             .put("model", model)
             .put("prompt", prompt)
-            .put("stream", false)
+            .put("stream", !isImageRequest)
             .put("keep_alive", "10m");
 
-        if (imageBase64 != null) {
-            body.put("image_base64", imageBase64);
+        if (isImageRequest) {
+            body.put("images", new JSONArray().put(imageBase64));
         }
 
-        System.out.println("Request JSON: " + body.toString());  // debug para ver el JSON
+
+        System.out.println("Request JSON: " + body.toString());
 
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create("http://localhost:11434/api/generate"))
@@ -259,23 +289,60 @@ public class Controller implements Initializable {
             .POST(BodyPublishers.ofString(body.toString()))
             .build();
 
-        Platform.runLater(() -> addBotMessage("thinking..."));
+        if (isImageRequest) {
+            // Imagen: no usamos streaming
+            Platform.runLater(() -> addBotMessage("thinking..."));
 
-        completeRequest = httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-            .thenApply(response -> {
-                if (isCancelled.get()) return null;
-                String responseText = safeExtractTextResponse(response.body());
-                Platform.runLater(() -> {
-                    if (lastBotMessageController != null) {
-                        lastBotMessageController.setMessage(responseText);
-                    } else {
-                        addBotMessage(responseText);
+            completeRequest = httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenApply(response -> {
+                    if (isCancelled.get()) return null;
+                    String responseText = safeExtractTextResponse(response.body());
+                    Platform.runLater(() -> {
+                        if (lastBotMessageController != null) {
+                            lastBotMessageController.setMessage(responseText);
+                        } else {
+                            addBotMessage(responseText);
+                        }
+                        setState(State.IDLE);
+                        attachedImageBase64 = null;
+                    });
+                    return response;
+                })
+                .exceptionally(e -> {
+                    if (!isCancelled.get()) e.printStackTrace();
+                    Platform.runLater(() -> {
+                        addBotMessage("Error en la petició.");
+                        setState(State.IDLE);
+                    });
+                    return null;
+                });
+
+        } else {
+            // Texto: usamos streaming línea a línea
+            Platform.runLater(() -> addBotMessage("")); // Vacío al inicio
+
+            streamRequest = httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofLines());
+
+            streamRequest.thenAcceptAsync(response -> {
+                StringBuilder fullResponse = new StringBuilder();
+                response.body().forEach(line -> {
+                    if (isCancelled.get()) return;
+                    try {
+                        JSONObject json = new JSONObject(line);
+                        String chunk = json.optString("response", "");
+                        fullResponse.append(chunk);
+                        updateLastBotMessage(fullResponse.toString());
+                    } catch (Exception e) {
+                        System.err.println("Error procesando línea JSON: " + e.getMessage());
                     }
+                });
+
+                Platform.runLater(() -> {
                     setState(State.IDLE);
                     attachedImageBase64 = null;
                 });
-                return response;
-            })
+
+            }, executorService)
             .exceptionally(e -> {
                 if (!isCancelled.get()) e.printStackTrace();
                 Platform.runLater(() -> {
@@ -284,12 +351,14 @@ public class Controller implements Initializable {
                 });
                 return null;
             });
+        }
     }
+
+
 
     private void cancelCurrentRequest() {
         isCancelled.set(true);
         if (streamRequest != null && !streamRequest.isDone()) {
-            try { if (currentInputStream != null) currentInputStream.close(); } catch (Exception ignore) {}
             streamRequest.cancel(true);
         }
         if (completeRequest != null && !completeRequest.isDone()) {
@@ -313,7 +382,9 @@ public class Controller implements Initializable {
                     JSONArray models = o.optJSONArray("models");
                     if (models != null) {
                         for (int i = 0; i < models.length(); i++) {
-                            if (modelName.equals(models.getString(i))) {
+                            JSONObject modelObj = models.getJSONObject(i);
+                            String name = modelObj.optString("name", "");
+                            if (modelName.equals(name)) {
                                 loaded = true;
                                 break;
                             }
