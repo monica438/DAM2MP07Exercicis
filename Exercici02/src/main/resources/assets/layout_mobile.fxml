@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+<?import javafx.scene.text.Text?>
+
+<AnchorPane xmlns="http://javafx.com/javafx/25"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.project.ControllerMobile">
+
+    <children>
+        <VBox spacing="0" AnchorPane.topAnchor="0.0" AnchorPane.bottomAnchor="0.0"
+              AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0">
+
+            <!-- HEADER -->
+            <HBox prefHeight="60" style="-fx-background-color: lightblue;" alignment="CENTER_LEFT">
+                <children>
+                    <!-- Flecha -->
+                    <ImageView fx:id="backArrow" fitHeight="24.0" fitWidth="24.0"
+                               pickOnBounds="true" preserveRatio="true"/>
+
+                    <!-- Separador expansible -->
+                    <Region HBox.hgrow="ALWAYS"/>
+
+                    <!-- Título centrado dentro de StackPane -->
+                    <StackPane alignment="CENTER">
+                        <Text fx:id="headerTitle" text="Nintendo DB">
+                            <font>
+                                <Font size="24.0"/>
+                            </font>
+                        </Text>
+                    </StackPane>
+
+                    <!-- Separador expansible -->
+                    <Region HBox.hgrow="ALWAYS"/>
+                </children>
+                <padding>
+                    <Insets top="10" bottom="10" left="16" right="16"/>
+                </padding>
+            </HBox>
+
+            <!-- CONTENIDO -->
+            <ScrollPane fx:id="scrollPane" fitToWidth="true" VBox.vgrow="ALWAYS">
+                <content>
+                    <VBox fx:id="mainContent" spacing="16" alignment="TOP_CENTER">
+                        <padding>
+                            <Insets top="20" bottom="20" left="20" right="20"/>
+                        </padding>
+                    </VBox>
+                </content>
+            </ScrollPane>
+        </VBox>
+    </children>
+</AnchorPane>
